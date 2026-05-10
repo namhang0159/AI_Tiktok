@@ -103,6 +103,12 @@ class App(ctk.CTk):
                 
                 # Gửi (Enter)
                 pyautogui.press("enter")
+                time.sleep(0.3)
+                # Di chuyển ra ngoài trường comment để tránh focus nháy
+                pyautogui.press("tab")
+                time.sleep(0.2)
+                pyautogui.press("tab")
+                time.sleep(0.2)
                 print("✓ Gửi comment thành công")
             else:
                 print("❌ Không thể copy vào clipboard")

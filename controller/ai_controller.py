@@ -161,11 +161,16 @@ class TikTokAIController:
 
         elif pred == 4:
             modal = getattr(app, "current_voice_modal", None)
+            
             if modal is not None:
                 modal.send()
+                
                 return "Gửi comment"
-            return "None"
-
+            
+            else:
+                pyautogui.press("enter")
+                return "Done comment"
+        
         return "None"
 
     def voice_comment(self, app):
