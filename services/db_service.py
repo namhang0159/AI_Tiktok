@@ -1,40 +1,103 @@
-import sqlite3
+import mysql.connector
 from datetime import datetime
 import subprocess
 import re
 
 # ======================
-# DATABASE
+# DATABASE MYSQL (WAMP)
 # ======================
+
 def copy_to_clipboard(text):
     """Copy text to clipboard (Windows)"""
     try:
-        # Remove any problematic characters
         text = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', text)
-        process = subprocess.Popen(['powershell', '-Command', f'Set-Clipboard -Value @"\n{text}\n"@'], 
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        process = subprocess.Popen(
+            ['powershell', '-Command', f'Set-Clipboard -Value @"\n{text}\n"@'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
         process.communicate()
         return True
+
     except Exception as e:
         print(f"Clipboard error: {e}")
         return False
 
+
+# ======================
+# KẾT NỐI MYSQL WAMP
+# ======================
+
+def connect_db():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="",      # WAMP mặc định thường rỗng
+        database="tiktok_db"
+    )
+
+
+# ======================
+# TẠO DATABASE + TABLE
+# ======================
+
 def init_db():
-    conn = sqlite3.connect('tiktok_history.db')
+    # Kết nối trước để tạo database nếu chưa có
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password=""
+    )
+
     cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS logs 
-                      (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                       action_name TEXT, 
-                       timestamp TEXT)''')
+
+    # Tạo database
+    cursor.execute("CREATE DATABASE IF NOT EXISTS tiktok_db")
+
+    conn.close()
+
+    # Kết nối vào database
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    # Tạo table logs
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            action_name VARCHAR(255),
+            timestamp VARCHAR(255)
+        )
+    """)
+
     conn.commit()
     conn.close()
+
+
+# ======================
+# LƯU LOG
+# ======================
 
 def save_log(action):
-    conn = sqlite3.connect('tiktok_history.db')
+    conn = connect_db()
     cursor = conn.cursor()
+
     now = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
-    cursor.execute("INSERT INTO logs (action_name, timestamp) VALUES (?, ?)", (action, now))
+
+    sql = "INSERT INTO logs (action_name, timestamp) VALUES (%s, %s)"
+    values = (action, now)
+
+    cursor.execute(sql, values)
+
     conn.commit()
     conn.close()
 
 
+# ======================
+# TEST
+# ======================
+
+init_db()
+save_log("Test hành động")
+print("Đã lưu log vào MySQL")

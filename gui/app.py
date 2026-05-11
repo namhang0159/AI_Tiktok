@@ -1,11 +1,14 @@
 from controller.ai_controller import TikTokAIController
 from gui.modals import LoadingModal, VoiceModal, VoiceError
-from services.db_service import init_db, copy_to_clipboard
-
+from services.db_service import (
+    init_db,
+    copy_to_clipboard,
+    connect_db
+)
 import customtkinter as ctk
 import cv2
 from PIL import Image
-import sqlite3
+
 import time
 import pyautogui
 
@@ -49,16 +52,36 @@ class App(ctk.CTk):
         self.update_frame()
 
     def show_history(self):
-        conn = sqlite3.connect('tiktok_history.db')
-        cursor = conn.cursor()
-        cursor.execute("SELECT action_name, timestamp FROM logs ORDER BY id DESC LIMIT 10")
-        rows = cursor.fetchall()
+        try:
+            conn = connect_db()
+            cursor = conn.cursor()
 
-        self.txt_logs.delete("1.0", "end")
-        for r in rows:
-            self.txt_logs.insert("end", f"{r[1]}: {r[0]}\n")
+            cursor.execute("""
+                SELECT action_name, timestamp
+                FROM logs
+                ORDER BY id DESC
+                LIMIT 10
+            """)
 
-        conn.close()
+            rows = cursor.fetchall()
+
+            self.txt_logs.delete("1.0", "end")
+
+            if not rows:
+                self.txt_logs.insert("end", "Chưa có lịch sử\n")
+                return
+
+            for r in rows:
+                self.txt_logs.insert(
+                    "end",
+                    f"🕒 {r[1]}\n👉 {r[0]}\n\n"
+                )
+
+            conn.close()
+
+        except Exception as e:
+            self.txt_logs.delete("1.0", "end")
+            self.txt_logs.insert("end", f"Lỗi database:\n{e}")
 
     def show_loading_modal(self):
         if self.loading_modal:
